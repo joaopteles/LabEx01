@@ -8,17 +8,19 @@ def executar_query_github(query):
     request = requests.post('https://api.github.com/graphql', json = {'query': query}, headers = headers)
     if request.status_code == 200:
         return request.json()
+    elif request.status_code == 502:
+      return executar_query_github(query)
     else:
         raise Exception("A query falhou: {}. {}".format(request.status_code, query))
 
 headers = {
     'Content-Type': 'application/json',
-    'Authorization': 'Bearer API-KEY'
+    'Authorization': 'Bearer API_KEY_GITHUB'
 }
 
 query = """
 query LabOne {
-  search(query: "stars>100", type: REPOSITORY, first: 10 {endCursorCode} ) {
+  search(query: "stars:>100", type: REPOSITORY, first: 10 {endCursorCode} ) {
     pageInfo {
       hasNextPage
       endCursor
@@ -30,7 +32,8 @@ query LabOne {
         url
         createdAt
         updatedAt
-        pullRequests(first: 1, states: MERGED) {
+        pullRequestsAceitas: pullRequests(states: MERGED){ totalCount }
+        pullRequests {
           totalCount
         }
         releases(first: 10) {
@@ -79,11 +82,10 @@ def exportar_para_csv(data):
     pathRelativa = os.getcwd() + "\output_repositorios_github.csv"
     with open(pathRelativa, 'w+') as csv_final:
         csvWriter = writer(csv_final)
-        header = (["Nome", "URL", "Criado em", "Atualizado em","Quantidade de stars", "Pull Requests totais", "Releases", "Linguagem primária", "Issues fechadas","Todas Issues"])
+        header = (["Nome", "URL", "Criado em", "Atualizado em","Quantidade de stars", "Pull Requests aceitas", "Pull Requests totais", "Releases", "Linguagem primária", "Issues fechadas","Todas Issues"])
         csvWriter.writerow(header)
         for repo in data:
-            print(repo['createdAt'])
-            repoRow =([repo['nameWithOwner'],repo['url'], repo['createdAt'], repo['updatedAt'],repo['stargazerCount'], repo['pullRequests'],repo['releases'], repo['primaryLanguage'], repo['closed'], repo['total']])
+            repoRow =([repo['nameWithOwner'],repo['url'], repo['createdAt'], repo['updatedAt'],repo['stargazerCount'], repo['pullRequestsAceitas'], repo['pullRequests'],repo['releases'], repo['primaryLanguage'], repo['closed'], repo['total']])
             csvWriter.writerow(repoRow)
 
 
